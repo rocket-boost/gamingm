@@ -2,173 +2,314 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BetGames PvP Hub</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Под Давлением — Crash Game</title>
     <style>
-        :root { --bg: #121212; --panel: #1e1e1e; --primary: #2ecc71; --accent: #3498db; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        
-        /* Меню выбора игр */
-        #menu { display: flex; justify-content: space-around; background: var(--panel); padding: 10px; border-bottom: 2px solid #333; }
-        .menu-btn { background: none; border: 1px solid #444; color: #888; padding: 8px 12px; border-radius: 8px; font-size: 12px; }
-        .menu-btn.active { border-color: var(--primary); color: var(--primary); font-weight: bold; }
-
-        .game-screen { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; position: relative; }
-        .game-screen.active { display: flex; }
-
-        /* Налив */
-        #glass { width: 120px; height: 200px; border: 4px solid #fff; border-top: none; border-radius: 0 0 20px 20px; position: relative; overflow: hidden; background: rgba(255,255,255,0.05); }
-        #water { position: absolute; bottom: 0; width: 100%; background: var(--accent); transition: height 0.1s linear; }
-        #blind { position: absolute; top:0; left:0; width:100%; height:100%; background:#000; z-index:5; display:none; align-items:center; justify-content:center; }
-
-        /* Разрез */
-        #cut-zone { width: 300px; height: 100px; background: #333; position: relative; border-radius: 10px; overflow: hidden; }
-        #target-line { position: absolute; left: 50%; width: 4px; height: 100%; background: white; z-index: 2; }
-        #knife { position: absolute; left: 0; width: 8px; height: 100%; background: var(--primary); box-shadow: 0 0 10px var(--primary); }
-
-        /* Парковка */
-        #road { width: 300px; height: 60px; background: #333; position: relative; border-radius: 30px; margin-bottom: 20px; }
-        #car { position: absolute; left: 0; width: 40px; height: 40px; background: var(--accent); top: 10px; border-radius: 5px; transition: left 0.1s ease-out; }
-        #parking-spot { position: absolute; right: 20px; width: 50px; height: 100%; background: rgba(231, 76, 60, 0.4); border: 2px dashed #e74c3c; }
-
-        /* Кнопки */
-        .action-btn { width: 200px; height: 70px; border-radius: 35px; border: none; background: var(--primary); color: white; font-size: 20px; font-weight: bold; margin-top: 30px; box-shadow: 0 4px #27ae60; cursor: pointer; touch-action: none; }
-        .action-btn:active { transform: translateY(2px); box-shadow: 0 2px #27ae60; }
-        .action-btn:disabled { background: #444; box-shadow: none; color: #777; }
-        
-        #result { margin-top: 20px; font-size: 18px; font-weight: bold; height: 24px; }
+        body {
+            background: #18191c;
+            color: #f5f5f5;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: #23242a;
+            border-radius: 18px;
+            box-shadow: 0 4px 32px #000a;
+            padding: 32px 24px 24px 24px;
+            max-width: 400px;
+            width: 100%;
+            margin: 24px auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+        .balance {
+            text-align: center;
+            margin-bottom: 18px;
+            font-size: 1.1rem;
+            color: #ffd700;
+        }
+        .bet-input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            margin-bottom: 16px;
+            font-size: 1.1rem;
+            background: #1a1b1f;
+            color: #fff;
+        }
+        .game-area {
+            background: #222327;
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 18px;
+            position: relative;
+            height: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .press {
+            width: 80px;
+            height: 40px;
+            background: linear-gradient(180deg, #888 60%, #444 100%);
+            border-radius: 8px 8px 12px 12px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 0;
+            z-index: 2;
+            box-shadow: 0 2px 12px #0008;
+        }
+        .gold-object {
+            width: 60px;
+            height: 30px;
+            background: linear-gradient(90deg, #ffd700 60%, #bfa100 100%);
+            border-radius: 12px 12px 18px 18px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 24px;
+            z-index: 1;
+            box-shadow: 0 2px 16px #ffd70088;
+        }
+        .multiplier {
+            text-align: center;
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #00ffae;
+            letter-spacing: 1px;
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #00ffae 60%, #007a5a 100%);
+            color: #18191c;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: background 0.2s;
+        }
+        .btn:disabled {
+            background: #444;
+            color: #888;
+            cursor: not-allowed;
+        }
+        .result {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-top: 10px;
+        }
+        @media (max-width: 500px) {
+            .container {
+                padding: 18px 6px 18px 6px;
+                max-width: 98vw;
+            }
+            .game-area {
+                height: 160px;
+            }
+            .press {
+                width: 60px;
+                height: 28px;
+            }
+            .gold-object {
+                width: 40px;
+                height: 18px;
+            }
+        }
     </style>
 </head>
 <body>
-
-    <div id="menu">
-        <button class="menu-btn active" onclick="switchGame('pour')">НАЛИВ</button>
-        <button class="menu-btn" onclick="switchGame('cut')">РАЗРЕЗ</button>
-        <button class="menu-btn" onclick="switchGame('slide')">ПАРКОВКА</button>
+    <div class="container">
+        <h1>Под Давлением</h1>
+        <div class="balance" id="balance">Баланс: ...</div>
+        <input type="number" min="1" max="100000" value="100" class="bet-input" id="bet" placeholder="Ставка (монеты)">
+        <div class="game-area" id="game-area">
+            <div class="press" id="press"></div>
+            <div class="gold-object" id="gold"></div>
+        </div>
+        <div class="multiplier" id="multiplier">x1.00</div>
+        <button class="btn" id="start-btn">Старт</button>
+        <button class="btn" id="cashout-btn" style="display:none; background:linear-gradient(90deg,#ffd700 60%,#bfa100 100%);color:#18191c;">Забрать</button>
+        <div class="result" id="result"></div>
     </div>
-
-    <!-- ИГРА 1: НАЛИВ -->
-    <div id="pour-game" class="game-screen active">
-        <div id="glass"><div id="blind">СЛУШАЙ...</div><div id="water"></div></div>
-        <button id="pour-btn" class="action-btn">НАЛИТЬ</button>
-    </div>
-
-    <!-- ИГРА 2: РАЗРЕЗ -->
-    <div id="cut-game" class="game-screen">
-        <p>Разрежь ровно посередине!</p>
-        <div id="cut-zone"><div id="target-line"></div><div id="knife"></div></div>
-        <button id="cut-btn" class="action-btn">РЕЗАТЬ</button>
-    </div>
-
-    <!-- ИГРА 3: ПАРКОВКА -->
-    <div id="slide-game" class="game-screen">
-        <p>Остановись в красной зоне!</p>
-        <div id="road"><div id="parking-spot"></div><div id="car"></div></div>
-        <button id="slide-btn" class="action-btn">ГАЗ</button>
-    </div>
-
-    <div id="result"></div>
-    <button onclick="location.reload()" style="background:none; border:none; color:#444; margin-top:20px;">Сброс</button>
-
+    <audio id="creak" src="https://cdn.pixabay.com/audio/2022/03/15/audio_115b9e7e7b.mp3"></audio>
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        const ADMIN_ID = "8754454109";
+        // Telegram WebApp integration
+        let tg = window.Telegram?.WebApp || {};
+        let user_id = null;
+        let balance = 0;
+        let crashPoint = 0;
+        let multiplier = 1.00;
+        let interval = null;
+        let gameActive = false;
+        let cashout = false;
+        let bet = 0;
+        const press = document.getElementById('press');
+        const gold = document.getElementById('gold');
+        const multiplierDiv = document.getElementById('multiplier');
+        const startBtn = document.getElementById('start-btn');
+        const cashoutBtn = document.getElementById('cashout-btn');
+        const resultDiv = document.getElementById('result');
+        const betInput = document.getElementById('bet');
+        const balanceDiv = document.getElementById('balance');
+        const creak = document.getElementById('creak');
 
-        let currentGame = 'pour';
-        let isGameOver = false;
-
-        function switchGame(name) {
-            document.querySelectorAll('.game-screen').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(name + '-game').classList.add('active');
-            event.target.classList.add('active');
-            currentGame = name;
-            resetState();
+        function getUserId() {
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                return tg.initDataUnsafe.user.id;
+            }
+            // fallback for testing
+            return 123456789;
         }
-
-        function resetState() {
-            isGameOver = false;
-            document.getElementById('result').innerText = "";
-            document.querySelectorAll('.action-btn').forEach(b => b.disabled = false);
+        async function fetchBalance() {
+            // In production, fetch from backend
+            // Here, just set placeholder
+            balanceDiv.textContent = `Баланс: ...`;
+            try {
+                const resp = await fetch(`/balance?tg_id=${user_id}`);
+                const data = await resp.json();
+                balance = data.balance;
+                balanceDiv.textContent = `Баланс: ${balance} монет`;
+            } catch {
+                balanceDiv.textContent = `Баланс: ...`;
+            }
         }
-
-        // --- ЛОГИКА 1: НАЛИВ ---
-        let waterLevel = 0;
-        let flowRate = Math.random() * 0.4 + 0.3;
-        const audio = new Audio('pour.mp3'); 
-        audio.loop = true;
-
-        const pourBtn = document.getElementById('pour-btn');
-        pourBtn.addEventListener('pointerdown', () => {
-            if(isGameOver) return;
-            audio.play().catch(() => {});
-            document.getElementById('blind').style.display = 'flex';
-            const inv = setInterval(() => {
-                if(!pourBtn.matches(':active')) { clearInterval(inv); finishPour(); return; }
-                waterLevel += flowRate;
-                audio.playbackRate = 1 + (waterLevel/100);
-                if(waterLevel > 115) { clearInterval(inv); finishPour(); }
-            }, 50);
-        });
-
-        function finishPour() {
-            if(isGameOver) return;
-            isGameOver = true;
-            audio.pause();
-            document.getElementById('blind').style.display = 'none';
-            document.getElementById('water').style.height = Math.min(waterLevel, 100) + '%';
-            showResult(waterLevel.toFixed(1) + '% (Цель 98%)');
+        async function updateBalance(newBalance) {
+            balance = newBalance;
+            balanceDiv.textContent = `Баланс: ${balance} монет`;
         }
-
-        // --- ЛОГИКА 2: РАЗРЕЗ ---
-        let knifePos = 0;
-        let knifeDir = 1;
-        let cutInterval = setInterval(() => {
-            if(currentGame !== 'cut' || isGameOver) return;
-            knifePos += 4 * knifeDir;
-            if(knifePos > 292 || knifePos < 0) knifeDir *= -1;
-            document.getElementById('knife').style.left = knifePos + 'px';
-        }, 20);
-
-        document.getElementById('cut-btn').addEventListener('click', () => {
-            isGameOver = true;
-            let accuracy = Math.abs(150 - (knifePos + 4)); // Отклонение от центра (150px)
-            showResult("Отклонение: " + accuracy.toFixed(0) + "px");
-        });
-
-        // --- ЛОГИКА 3: ПАРКОВКА ---
-        let carPos = 0;
-        let speed = 0;
-        document.getElementById('slide-btn').addEventListener('pointerdown', () => {
-            if(isGameOver) return;
-            const inv = setInterval(() => {
-                if(!document.getElementById('slide-btn').matches(':active')) { 
-                    clearInterval(inv); 
-                    slideStop(); 
-                    return; 
+        function playCreak() {
+            creak.currentTime = 0;
+            creak.play();
+        }
+        function vibrate(ms) {
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            } else if (window.navigator.vibrate) {
+                window.navigator.vibrate(ms);
+            }
+        }
+        function resetGame() {
+            multiplier = 1.00;
+            multiplierDiv.textContent = 'x1.00';
+            press.style.top = '0';
+            gold.style.bottom = '24px';
+            resultDiv.textContent = '';
+            startBtn.style.display = '';
+            cashoutBtn.style.display = 'none';
+            betInput.disabled = false;
+            gameActive = false;
+            cashout = false;
+        }
+        function animatePress(mult) {
+            // Move press down as multiplier increases
+            let maxTop = 140;
+            let percent = Math.min((mult - 1) / (crashPoint - 1), 1);
+            let top = percent * maxTop;
+            press.style.top = `${top}px`;
+        }
+        async function startGame() {
+            bet = parseInt(betInput.value);
+            if (!bet || bet < 1 || bet > balance) {
+                resultDiv.textContent = 'Некорректная ставка';
+                return;
+            }
+            crashPoint = +(Math.random() * 8.9 + 1.1).toFixed(2); // 1.1 - 10.0
+            multiplier = 1.00;
+            gameActive = true;
+            cashout = false;
+            startBtn.style.display = 'none';
+            cashoutBtn.style.display = '';
+            betInput.disabled = true;
+            resultDiv.textContent = '';
+            playCreak();
+            vibrate(30);
+            interval = setInterval(() => {
+                if (!gameActive) return;
+                multiplier = +(multiplier + 0.05).toFixed(2);
+                multiplierDiv.textContent = `x${multiplier.toFixed(2)}`;
+                animatePress(multiplier);
+                playCreak();
+                vibrate(10);
+                if (multiplier >= crashPoint) {
+                    endGame(false);
                 }
-                speed += 0.5;
-            }, 50);
-        });
-
-        function slideStop() {
-            isGameOver = true;
-            carPos = speed * 10; // Сила инерции
-            document.getElementById('car').style.left = Math.min(carPos, 260) + 'px';
-            setTimeout(() => {
-                let win = carPos > 230 && carPos < 280;
-                showResult(win ? "ИДЕАЛЬНАЯ ПАРКОВКА!" : "МИМО!");
-            }, 500);
+            }, 80);
         }
-
-        function showResult(text) {
-            document.getElementById('result').innerText = text;
-            document.querySelectorAll('.action-btn').forEach(b => b.disabled = true);
-            tg.HapticFeedback.notificationOccurred('success');
-            tg.sendData(JSON.stringify({game: currentGame, res: text, admin: ADMIN_ID}));
+        async function endGame(won) {
+            clearInterval(interval);
+            gameActive = false;
+            cashoutBtn.style.display = 'none';
+            startBtn.style.display = '';
+            betInput.disabled = false;
+            let resultText = '';
+            let finalMultiplier = multiplier;
+            if (!won) {
+                multiplierDiv.textContent = `x${crashPoint.toFixed(2)} (CRASH!)`;
+                resultText = `Объект раздавлен! Вы проиграли ${bet} монет.`;
+                gold.style.bottom = '8px';
+                vibrate(100);
+            } else {
+                resultText = `Вы забрали: ${Math.floor(bet * multiplier)} монет!`;
+                vibrate(60);
+            }
+            resultDiv.textContent = resultText;
+            // Send result to backend for validation and balance update
+            try {
+                const resp = await fetch('/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tg_id: user_id,
+                        bet: bet,
+                        multiplier: won ? finalMultiplier : crashPoint,
+                        crash: crashPoint,
+                        cashout: won
+                    })
+                });
+                const data = await resp.json();
+                if (data.balance !== undefined) {
+                    updateBalance(data.balance);
+                }
+                if (data.error) {
+                    resultDiv.textContent = data.error;
+                }
+            } catch {
+                resultDiv.textContent = 'Ошибка соединения с сервером';
+            }
         }
+        startBtn.onclick = startGame;
+        cashoutBtn.onclick = () => {
+            if (!gameActive) return;
+            cashout = true;
+            endGame(true);
+        };
+        // Initialization
+        window.onload = () => {
+            user_id = getUserId();
+            fetchBalance();
+            resetGame();
+        };
+        // Responsive resize
+        window.onresize = () => {
+            animatePress(multiplier);
+        };
     </script>
 </body>
 </html>
