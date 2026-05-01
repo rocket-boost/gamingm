@@ -3,134 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Blind Fill Pro</title>
+    <title>BetGames PvP Hub</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #121212; color: white; margin: 0; touch-action: none; }
-        #glass-container { position: relative; width: 140px; height: 240px; border: 4px solid #fff; margin: 40px auto; border-top: none; border-radius: 0 0 20px 20px; background: rgba(255,255,255,0.05); overflow: hidden; }
-        #water { position: absolute; bottom: 0; width: 100%; background: #3498db; box-shadow: 0 0 15px #3498db; }
-        #blind-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 10; display: none; align-items: center; justify-content: center; font-weight: bold; }
-        #pour-btn { width: 220px; height: 80px; font-size: 24px; border-radius: 40px; border: none; background: #2ecc71; color: white; font-weight: bold; cursor: pointer; }
-        #pour-btn:disabled { background: #555; cursor: not-allowed; }
-        .status { color: #888; font-size: 14px; }
+        :root { --bg: #121212; --panel: #1e1e1e; --primary: #2ecc71; --accent: #3498db; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        /* Меню выбора игр */
+        #menu { display: flex; justify-content: space-around; background: var(--panel); padding: 10px; border-bottom: 2px solid #333; }
+        .menu-btn { background: none; border: 1px solid #444; color: #888; padding: 8px 12px; border-radius: 8px; font-size: 12px; }
+        .menu-btn.active { border-color: var(--primary); color: var(--primary); font-weight: bold; }
+
+        .game-screen { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; position: relative; }
+        .game-screen.active { display: flex; }
+
+        /* Налив */
+        #glass { width: 120px; height: 200px; border: 4px solid #fff; border-top: none; border-radius: 0 0 20px 20px; position: relative; overflow: hidden; background: rgba(255,255,255,0.05); }
+        #water { position: absolute; bottom: 0; width: 100%; background: var(--accent); transition: height 0.1s linear; }
+        #blind { position: absolute; top:0; left:0; width:100%; height:100%; background:#000; z-index:5; display:none; align-items:center; justify-content:center; }
+
+        /* Разрез */
+        #cut-zone { width: 300px; height: 100px; background: #333; position: relative; border-radius: 10px; overflow: hidden; }
+        #target-line { position: absolute; left: 50%; width: 4px; height: 100%; background: white; z-index: 2; }
+        #knife { position: absolute; left: 0; width: 8px; height: 100%; background: var(--primary); box-shadow: 0 0 10px var(--primary); }
+
+        /* Парковка */
+        #road { width: 300px; height: 60px; background: #333; position: relative; border-radius: 30px; margin-bottom: 20px; }
+        #car { position: absolute; left: 0; width: 40px; height: 40px; background: var(--accent); top: 10px; border-radius: 5px; transition: left 0.1s ease-out; }
+        #parking-spot { position: absolute; right: 20px; width: 50px; height: 100%; background: rgba(231, 76, 60, 0.4); border: 2px dashed #e74c3c; }
+
+        /* Кнопки */
+        .action-btn { width: 200px; height: 70px; border-radius: 35px; border: none; background: var(--primary); color: white; font-size: 20px; font-weight: bold; margin-top: 30px; box-shadow: 0 4px #27ae60; cursor: pointer; touch-action: none; }
+        .action-btn:active { transform: translateY(2px); box-shadow: 0 2px #27ae60; }
+        .action-btn:disabled { background: #444; box-shadow: none; color: #777; }
+        
+        #result { margin-top: 20px; font-size: 18px; font-weight: bold; height: 24px; }
     </style>
 </head>
 <body>
-    <h2>Blind Fill PvP</h2>
-    <p class="status">Удерживай кнопку. Отпустишь — раунд окончен!</p>
-    
-    <div id="glass-container">
-        <div id="blind-overlay">СЛУШАЙ...</div>
-        <div id="water" style="height: 0%;"></div>
+
+    <div id="menu">
+        <button class="menu-btn active" onclick="switchGame('pour')">НАЛИВ</button>
+        <button class="menu-btn" onclick="switchGame('cut')">РАЗРЕЗ</button>
+        <button class="menu-btn" onclick="switchGame('slide')">ПАРКОВКА</button>
     </div>
 
-    <button id="pour-btn">НАЧАТЬ НАЛИВ</button>
-    <p id="result"></p>
-    <button onclick="location.reload()" style="background: none; border: 1px solid #555; color: #555; padding: 5px 10px; border-radius: 5px; margin-top: 20px;">Заново</button>
+    <!-- ИГРА 1: НАЛИВ -->
+    <div id="pour-game" class="game-screen active">
+        <div id="glass"><div id="blind">СЛУШАЙ...</div><div id="water"></div></div>
+        <button id="pour-btn" class="action-btn">НАЛИТЬ</button>
+    </div>
+
+    <!-- ИГРА 2: РАЗРЕЗ -->
+    <div id="cut-game" class="game-screen">
+        <p>Разрежь ровно посередине!</p>
+        <div id="cut-zone"><div id="target-line"></div><div id="knife"></div></div>
+        <button id="cut-btn" class="action-btn">РЕЗАТЬ</button>
+    </div>
+
+    <!-- ИГРА 3: ПАРКОВКА -->
+    <div id="slide-game" class="game-screen">
+        <p>Остановись в красной зоне!</p>
+        <div id="road"><div id="parking-spot"></div><div id="car"></div></div>
+        <button id="slide-btn" class="action-btn">ГАЗ</button>
+    </div>
+
+    <div id="result"></div>
+    <button onclick="location.reload()" style="background:none; border:none; color:#444; margin-top:20px;">Сброс</button>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
+        const ADMIN_ID = "8754454109";
 
-        let waterLevel = 0;
+        let currentGame = 'pour';
         let isGameOver = false;
-        let flowRate = Math.random() * 0.5 + 0.3; // Рандомный напор
-        let audioCtx, mainOsc, bubbleOsc, gainNode;
 
-        function initAudio() {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            gainNode = audioCtx.createGain();
-            gainNode.connect(audioCtx.destination);
+        function switchGame(name) {
+            document.querySelectorAll('.game-screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(name + '-game').classList.add('active');
+            event.target.classList.add('active');
+            currentGame = name;
+            resetState();
         }
 
-        function startPouring() {
-            // Основной тон резонанса стакана
-            mainOsc = audioCtx.createOscillator();
-            mainOsc.type = 'sine';
-            mainOsc.frequency.setValueAtTime(200, audioCtx.currentTime); 
-            
-            // "Бульканье" (низкий гул)
-            bubbleOsc = audioCtx.createOscillator();
-            bubbleOsc.type = 'triangle';
-            bubbleOsc.frequency.setValueAtTime(50, audioCtx.currentTime);
-
-            const lfo = audioCtx.createOscillator();
-            lfo.type = 'square';
-            lfo.frequency.setValueAtTime(10, audioCtx.currentTime); // 10 бульков в сек
-            const lfoGain = audioCtx.createGain();
-            lfoGain.gain.value = 20;
-            lfo.connect(lfoGain);
-            lfoGain.connect(bubbleOsc.frequency);
-
-            mainOsc.connect(gainNode);
-            bubbleOsc.connect(gainNode);
-            
-            mainOsc.start();
-            bubbleOsc.start();
-            lfo.start();
-            gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        function resetState() {
+            isGameOver = false;
+            document.getElementById('result').innerText = "";
+            document.querySelectorAll('.action-btn').forEach(b => b.disabled = false);
         }
 
-        const btn = document.getElementById('pour-btn');
-        const water = document.getElementById('water');
-        const overlay = document.getElementById('blind-overlay');
+        // --- ЛОГИКА 1: НАЛИВ ---
+        let waterLevel = 0;
+        let flowRate = Math.random() * 0.4 + 0.3;
+        const audio = new Audio('pour.mp3'); 
+        audio.loop = true;
 
-        btn.addEventListener('pointerdown', (e) => {
-            if (isGameOver) return;
-            initAudio();
-            startPouring();
-            overlay.style.display = 'flex';
-            
-            const interval = setInterval(() => {
-                if (!btn.matches(':active')) {
-                    clearInterval(interval);
-                    stopGame();
-                    return;
-                }
+        const pourBtn = document.getElementById('pour-btn');
+        pourBtn.addEventListener('pointerdown', () => {
+            if(isGameOver) return;
+            audio.play().catch(() => {});
+            document.getElementById('blind').style.display = 'flex';
+            const inv = setInterval(() => {
+                if(!pourBtn.matches(':active')) { clearInterval(inv); finishPour(); return; }
                 waterLevel += flowRate;
-                
-                // Имитация изменения звука при заполнении
-                // Частота растет: чем меньше воздуха, тем выше звук
-                let freq = 200 + Math.pow(waterLevel, 1.5) * 5;
-                mainOsc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                
-                if (waterLevel > 90) tg.HapticFeedback.impactOccurred('light');
-                if (waterLevel > 115) {
-                    clearInterval(interval);
-                    stopGame();
-                }
-                water.style.height = (waterLevel > 100 ? 100 : waterLevel) + '%';
+                audio.playbackRate = 1 + (waterLevel/100);
+                if(waterLevel > 115) { clearInterval(inv); finishPour(); }
             }, 50);
         });
 
-        function stopGame() {
-            if (isGameOver) return;
+        function finishPour() {
+            if(isGameOver) return;
             isGameOver = true;
-            btn.disabled = true;
-            overlay.style.display = 'none';
+            audio.pause();
+            document.getElementById('blind').style.display = 'none';
+            document.getElementById('water').style.height = Math.min(waterLevel, 100) + '%';
+            showResult(waterLevel.toFixed(1) + '% (Цель 98%)');
+        }
 
-            // Плавное затухание звука
-            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
+        // --- ЛОГИКА 2: РАЗРЕЗ ---
+        let knifePos = 0;
+        let knifeDir = 1;
+        let cutInterval = setInterval(() => {
+            if(currentGame !== 'cut' || isGameOver) return;
+            knifePos += 4 * knifeDir;
+            if(knifePos > 292 || knifePos < 0) knifeDir *= -1;
+            document.getElementById('knife').style.left = knifePos + 'px';
+        }, 20);
+
+        document.getElementById('cut-btn').addEventListener('click', () => {
+            isGameOver = true;
+            let accuracy = Math.abs(150 - (knifePos + 4)); // Отклонение от центра (150px)
+            showResult("Отклонение: " + accuracy.toFixed(0) + "px");
+        });
+
+        // --- ЛОГИКА 3: ПАРКОВКА ---
+        let carPos = 0;
+        let speed = 0;
+        document.getElementById('slide-btn').addEventListener('pointerdown', () => {
+            if(isGameOver) return;
+            const inv = setInterval(() => {
+                if(!document.getElementById('slide-btn').matches(':active')) { 
+                    clearInterval(inv); 
+                    slideStop(); 
+                    return; 
+                }
+                speed += 0.5;
+            }, 50);
+        });
+
+        function slideStop() {
+            isGameOver = true;
+            carPos = speed * 10; // Сила инерции
+            document.getElementById('car').style.left = Math.min(carPos, 260) + 'px';
             setTimeout(() => {
-                if(mainOsc) mainOsc.stop();
-                if(bubbleOsc) bubbleOsc.stop();
-            }, 100);
+                let win = carPos > 230 && carPos < 280;
+                showResult(win ? "ИДЕАЛЬНАЯ ПАРКОВКА!" : "МИМО!");
+            }, 500);
+        }
 
-            const final = waterLevel.toFixed(1);
-            let msg = "";
-            if (waterLevel > 100) {
-                msg = `🔴 ПЕРЕЛИВ! (${final}%)`;
-                tg.HapticFeedback.notificationOccurred('error');
-            } else if (waterLevel > 96) {
-                msg = `💎 ЧЕМПИОН! (${final}%)`;
-                tg.HapticFeedback.notificationOccurred('success');
-            } else {
-                msg = `Результат: ${final}%`;
-            }
-            document.getElementById('result').innerText = msg;
-
-            // Отправляем ID админа (8754454109) и результат
-            tg.sendData(JSON.stringify({score: final, admin_id: "8754454109"}));
+        function showResult(text) {
+            document.getElementById('result').innerText = text;
+            document.querySelectorAll('.action-btn').forEach(b => b.disabled = true);
+            tg.HapticFeedback.notificationOccurred('success');
+            tg.sendData(JSON.stringify({game: currentGame, res: text, admin: ADMIN_ID}));
         }
     </script>
 </body>
