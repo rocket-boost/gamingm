@@ -6,20 +6,21 @@
     <title>Blind Fill Game</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #1a1a1a; color: white; overflow: hidden; }
-        #glass-container { position: relative; width: 150px; height: 250px; border: 4px solid #fff; margin: 50px auto; border-top: none; border-radius: 0 0 20px 20px; overflow: hidden; }
-        #water { position: absolute; bottom: 0; width: 100%; background: #3498db; transition: height 0.1s linear; }
-        #blind-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: black; display: none; z-index: 10; align-items: center; justify-content: center; font-size: 20px; }
-        #pour-btn { width: 200px; height: 80px; font-size: 24px; font-weight: bold; border-radius: 40px; border: none; background: #2ecc71; color: white; cursor: pointer; touch-action: none; }
-        #pour-btn:active { background: #27ae60; transform: scale(0.95); }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #121212; color: white; overflow: hidden; margin: 0; padding-top: 20px; }
+        #glass-container { position: relative; width: 150px; height: 250px; border: 5px solid #fff; margin: 30px auto; border-top: none; border-radius: 0 0 25px 25px; overflow: hidden; background: rgba(255,255,255,0.05); }
+        #water { position: absolute; bottom: 0; width: 100%; background: linear-gradient(to top, #2980b9, #3498db); transition: height 0.1s linear; }
+        #blind-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #222 0%, #000 100%); display: none; z-index: 10; align-items: center; justify-content: center; font-size: 18px; color: #aaa; text-transform: uppercase; letter-spacing: 2px; }
+        #pour-btn { width: 220px; height: 80px; font-size: 26px; font-weight: bold; border-radius: 40px; border: none; background: #2ecc71; color: white; cursor: pointer; touch-action: none; box-shadow: 0 6px #27ae60; transition: all 0.1s; }
+        #pour-btn:active { transform: translateY(4px); box-shadow: 0 2px #27ae60; background: #27ae60; }
+        #result { font-size: 20px; margin-top: 20px; font-weight: bold; min-height: 30px; }
     </style>
 </head>
 <body>
-    <h1>Blind Fill PvP</h1>
-    <p>Цель: Наполни стакан на 95-99%</p>
+    <h2>Blind Fill PvP</h2>
+    <p style="color: #888;">Цель: 95.0% — 99.9%</p>
     
     <div id="glass-container">
-        <div id="blind-overlay">СЛУШАЙ ЗВУК...</div>
+        <div id="blind-overlay">Слушай звук...</div>
         <div id="water" style="height: 0%;"></div>
     </div>
 
@@ -32,19 +33,79 @@
 
         let waterLevel = 0;
         let isPouring = false;
-        let flowRate = Math.random() * 0.5 + 0.2; // Случайная скорость
+        let flowRate = Math.random() * 0.4 + 0.3; 
         let interval;
+        let adminId = "8754454109";
 
+        // Аудио переменные
+        let audioCtx;
+        let noiseNode;
+        let filterNode;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function startPouringSound() {
+            // Создаем "белый шум" для имитации воды
+            const bufferSize = 2 * audioCtx.sampleRate;
+            const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+
+            noiseNode = audioCtx.createBufferSource();
+            noiseNode.buffer = noiseBuffer;
+            noiseNode.loop = true;
+
+            // Фильтр, который будет менять тембр (высоту)
+            filterNode = audioCtx.createBiquadFilter();
+            filterNode.type = 'lowpass';
+            filterNode.frequency.value = 400; // Начальный глухой звук
+
+            const gainNode = audioCtx.createGain();
+            gainNode.gain.value = 0.15; // Громкость
+
+            noiseNode.connect(filterNode);
+            filterNode.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            noiseNode.start();
+        }
+
+        const btn = document.getElementById('pour-btn');
         const water = document.getElementById('water');
         const overlay = document.getElementById('blind-overlay');
-        const btn = document.getElementById('pour-btn');
 
-        btn.addEventListener('pointerdown', () => {
+        btn.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            initAudio(); // Активируем контекст
+            startPouringSound();
+            
             isPouring = true;
+            waterLevel = 0;
+            water.style.height = '0%';
             overlay.style.display = 'flex';
+            document.getElementById('result').innerText = "";
+
             interval = setInterval(() => {
                 waterLevel += flowRate;
-                if (waterLevel > 110) stopGame(); // Перелив
+                
+                // Меняем звук по мере наполнения
+                if (filterNode) {
+                    filterNode.frequency.value = 400 + (waterLevel * 25); 
+                }
+
+                // Вибрация в Telegram
+                if (waterLevel > 90) tg.HapticFeedback.impactOccurred('light');
+                
+                if (waterLevel > 110) stopGame();
                 water.style.height = waterLevel + '%';
             }, 50);
         });
@@ -55,19 +116,34 @@
             if (!isPouring) return;
             isPouring = false;
             clearInterval(interval);
-            overlay.style.display = 'none';
             
+            if (noiseNode) {
+                noiseNode.stop();
+                noiseNode.disconnect();
+            }
+
+            overlay.style.display = 'none';
             const final = waterLevel.toFixed(1);
             let msg = "";
             
-            if (waterLevel > 100) msg = `ПЕРЕЛИВ! (${final}%)`;
-            else if (waterLevel > 95) msg = `ЛЕГЕНДАРНО! (${final}%)`;
-            else msg = `Результат: ${final}%`;
+            if (waterLevel > 100) {
+                msg = `❌ ПЕРЕЛИВ! (${final}%)`;
+                tg.HapticFeedback.notificationOccurred('error');
+            } else if (waterLevel > 95) {
+                msg = `✅ ИДЕАЛЬНО! (${final}%)`;
+                tg.HapticFeedback.notificationOccurred('success');
+            } else {
+                msg = `Результат: ${final}%`;
+            }
             
             document.getElementById('result').innerText = msg;
             
-            // Отправляем результат обратно в бота
-            tg.sendData(JSON.stringify({score: waterLevel, admin_id: "8754454109"}));
+            // Отправка данных в бота (нужна для PvP)
+            tg.sendData(JSON.stringify({
+                score: final,
+                user_id: tg.initDataUnsafe.user?.id,
+                admin: adminId
+            }));
         }
     </script>
 </body>
